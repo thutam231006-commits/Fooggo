@@ -12,10 +12,12 @@
 <div class="grid">
 @forelse($foods as $food)
     <article class="card">
-        <a class="card-link" href="{{ route('foods.show', $food) }}">@if($food->displayImageUrl())<img class="food-image" src="{{ $food->displayImageUrl() }}" alt="{{ $food->name }}" loading="lazy">@else<div class="food-image food-placeholder" role="img" aria-label="{{ $food->category ?: 'Món ăn' }}">{{ $food->displayEmoji() }}</div>@endif<div class="card-body"><div class="category">{{ $food->category ?: 'Món ăn' }}</div><div class="name">{{ $food->name }}</div><div class="desc">{{ Str::limit($food->description, 70) }}</div><div class="bottom"><span class="price">{{ number_format($food->price, 0, ',', '.') }} đ</span><span class="stock">{{ $food->stock > 0 ? 'Còn '.$food->stock : 'Hết hàng' }}</span></div></div></a>
+        <a class="card-link" href="{{ route('foods.show', $food) }}">@if($food->displayImageUrl())<img class="food-image" src="{{ $food->displayImageUrl() }}" alt="{{ $food->name }}" loading="lazy">@else<div class="food-image food-placeholder" role="img" aria-label="{{ $food->category ?: 'Món ăn' }}">{{ $food->displayEmoji() }}</div>@endif<div class="card-body"><div class="category">{{ $food->category ?: 'Món ăn' }}</div><div class="name">{{ $food->name }}</div><div class="desc">{{ Str::limit($food->description, 70) }}</div><div class="bottom"><span class="price">{{ number_format($food->price, 0, ',', '.') }} đ</span><span class="stock {{ $food->stock === 0 ? 'out-of-stock' : '' }}">{{ $food->stock > 0 ? 'Còn '.$food->stock : 'Hết sản phẩm' }}</span></div></div></a>
         <div class="card-body" style="padding-top:0">
             @auth
-                @if(auth()->user()->role === 'customer' && $food->stock > 0)
+                @if($food->stock === 0)
+                    <div class="sold-out-action">Hết sản phẩm</div>
+                @elseif(auth()->user()->role === 'customer')
                     <form class="card-actions" method="POST" action="{{ route('cart.items.store') }}">
                         @csrf
                         <input type="hidden" name="food_id" value="{{ $food->id }}">
@@ -26,7 +28,9 @@
                     <span class="muted" style="font-size:12px">Chỉ tài khoản khách hàng được đặt món.</span>
                 @endif
             @else
+                @if($food->stock === 0)<div class="sold-out-action">Hết sản phẩm</div>@else
                 <a class="button full" style="margin-top:0" href="{{ route('login') }}">Đăng nhập để đặt món</a>
+                @endif
             @endauth
         </div>
     </article>

@@ -19,6 +19,7 @@ class WebCartController extends Controller
         return view('cart.show', [
             'cart' => $cart,
             'total' => $cart->items->sum(fn ($item) => $item->quantity * $item->food->price),
+            'hasInvalidItems' => $cart->items->contains(fn ($item) => ! $item->food->is_available || $item->food->stock < $item->quantity),
         ]);
     }
 
@@ -30,8 +31,12 @@ class WebCartController extends Controller
         ]);
         $food = Food::findOrFail($data['food_id']);
 
-        if (! $food->is_available || $food->stock < $data['quantity']) {
-            throw ValidationException::withMessages(['quantity' => 'Món ăn không còn đủ số lượng.']);
+        if (! $food->is_available || $food->stock === 0) {
+            throw ValidationException::withMessages(['quantity' => "{$food->name} - Hết sản phẩm."]);
+        }
+
+        if ($food->stock < $data['quantity']) {
+            throw ValidationException::withMessages(['quantity' => "{$food->name} chỉ còn {$food->stock} phần."]);
         }
 
         $cart = $request->user()->cart()->firstOrCreate();

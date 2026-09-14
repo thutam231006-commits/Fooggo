@@ -72,6 +72,29 @@ class BusinessValidationTest extends TestCase
         $this->assertDatabaseHas('cart_items', ['food_id' => $food->id, 'quantity' => 2]);
     }
 
+    public function test_cart_clearly_marks_food_that_sells_out_before_ordering(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        $food = Food::factory()->create(['name' => 'Cơm gà', 'stock' => 1]);
+        $this->actingAs($customer)->post('/cart/items', ['food_id' => $food->id, 'quantity' => 1]);
+        $food->update(['stock' => 0]);
+
+        $this->get('/cart')
+            ->assertOk()
+            ->assertSee('Cơm gà')
+            ->assertSee('Hết sản phẩm')
+            ->assertSee('Chưa thể đặt hàng');
+
+        $this->from('/cart')->post('/orders', [
+            'pickup_slot' => now()->addHour()->format('Y-m-d\TH:i'),
+        ])->assertRedirect('/cart')->assertSessionHasErrors([
+            'cart' => 'Cơm gà - Hết sản phẩm. Vui lòng xóa món khỏi giỏ hàng.',
+        ]);
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseHas('cart_items', ['food_id' => $food->id, 'quantity' => 1]);
+    }
+
     public function test_payment_rejects_insufficient_balance_without_creating_transaction(): void
     {
         [$customer, $order] = $this->pendingOrder(wallet: 10000, total: 30000);
@@ -150,6 +173,21 @@ class BusinessValidationTest extends TestCase
 
         $this->get('/')->assertOk()->assertSee($available->name)->assertDontSee($unavailable->name);
         $this->get("/foods/{$unavailable->id}")->assertNotFound();
+    }
+
+    public function test_public_menu_labels_zero_stock_food_as_sold_out(): void
+    {
+        $food = Food::factory()->create(['name' => 'Món hết kho', 'stock' => 0, 'is_available' => true]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee($food->name)
+            ->assertSee('Hết sản phẩm');
+
+        $this->get("/foods/{$food->id}")
+            ->assertOk()
+            ->assertSee('Hết sản phẩm')
+            ->assertDontSee('Thêm vào giỏ');
     }
 
     public function test_api_login_is_rate_limited_after_repeated_failures(): void

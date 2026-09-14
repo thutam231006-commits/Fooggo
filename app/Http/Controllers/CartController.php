@@ -27,7 +27,8 @@ class CartController extends Controller
         ]);
 
         $food = Food::findOrFail($data['food_id']);
-        abort_if(! $food->is_available || $food->stock < $data['quantity'], 422, 'Món ăn không còn đủ số lượng.');
+        abort_if(! $food->is_available || $food->stock === 0, 422, "{$food->name} - Hết sản phẩm.");
+        abort_if($food->stock < $data['quantity'], 422, "{$food->name} chỉ còn {$food->stock} phần.");
 
         $cart = $request->user()->cart()->firstOrCreate();
         $item = $cart->items()->firstOrNew(['food_id' => $food->id]);

@@ -28,9 +28,15 @@ class OrderWorkflowService
             foreach ($items as $item) {
                 $food = Food::whereKey($item['food_id'])->lockForUpdate()->first();
 
-                if (! $food || ! $food->is_available || $food->stock < $item['quantity']) {
+                if (! $food || ! $food->is_available || $food->stock === 0) {
                     throw ValidationException::withMessages([
-                        'cart' => 'Một món trong giỏ đã hết hoặc không còn đủ số lượng. Vui lòng cập nhật giỏ hàng.',
+                        'cart' => ($food?->name ?? 'Sản phẩm').' - Hết sản phẩm. Vui lòng xóa món khỏi giỏ hàng.',
+                    ]);
+                }
+
+                if ($food->stock < $item['quantity']) {
+                    throw ValidationException::withMessages([
+                        'cart' => "{$food->name} chỉ còn {$food->stock} phần. Vui lòng giảm số lượng trong giỏ.",
                     ]);
                 }
 

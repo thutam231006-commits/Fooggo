@@ -129,6 +129,8 @@ label { color: #34423c; }
 .desc { min-height: 58px; }
 .price { font-size: 17px; }
 .stock { padding: 4px 7px; border-radius: 4px; background: #f0f4f2; }
+.stock.out-of-stock { color: #b6382a; background: var(--coral-soft); font-weight: 750; }
+.sold-out-action { min-height: 38px; display: grid; place-items: center; border: 1px solid #edc5bf; border-radius: 6px; color: #b6382a; background: var(--coral-soft); font-weight: 800; }
 .card-actions { grid-template-columns: 68px 1fr; }
 .card-actions input { min-width: 0; }
 .card-actions .button { white-space: nowrap; }
@@ -160,6 +162,8 @@ tbody tr:hover { background: #fbfcfb; }
 .cart-food { display: flex; align-items: center; gap: 11px; min-width: 190px; font-weight: 700; }
 .cart-food img { width: 54px; height: 48px; object-fit: cover; border-radius: 5px; }
 .cart-food-placeholder { display: grid; place-items: center; width: 54px; height: 48px; flex: 0 0 54px; border-radius: 5px; background: var(--green-soft); font-size: 24px; }
+.stock-warning { display: block; margin-top: 3px; color: #b6382a; font-size: 12px; font-weight: 750; }
+.invalid-row { background: #fff8f6; }
 .admin-nav { display: flex; gap: 5px; margin-bottom: 26px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 .admin-nav a { padding: 9px 12px; border-radius: 5px; color: var(--muted); font-weight: 700; }
 .admin-nav a:hover, .admin-nav a.active { color: var(--role); background: var(--role-soft); }

@@ -8,13 +8,13 @@ Trên Laragon, dùng PHP 8.3:
 & 'C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe' vendor\bin\phpunit
 ```
 
-Kết quả chuẩn hiện tại: **42 tests, 233 assertions**.
+Kết quả chuẩn hiện tại: **44 tests, 254 assertions**.
 
 ## Phạm vi kiểm thử
 
 | Tệp kiểm thử | Số test | Phạm vi |
 |---|---:|---|
-| `BusinessValidationTest.php` | 12 | Validation đăng ký, tồn kho, giỏ rỗng, giờ nhận, số dư, thanh toán lặp, trạng thái sai, rate limit, API chưa xác thực |
+| `BusinessValidationTest.php` | 14 | Validation đăng ký, tồn kho, thông báo hết sản phẩm, giỏ rỗng, giờ nhận, số dư, thanh toán lặp, trạng thái sai, rate limit, API chưa xác thực |
 | `FoodGoApiTest.php` | 7 | Luồng REST API đặt món, thanh toán, hoàn tiền, phân quyền, đăng nhập mã sinh viên, đánh giá, báo cáo |
 | `WebAuthenticationTest.php` | 6 | Đăng ký, đăng nhập session, tài khoản khóa, dashboard theo vai trò, CSRF 419, đăng xuất |
 | `WebOrderingTest.php` | 7 | Chọn nhiều món, giỏ hàng, đặt món, thanh toán, hủy đơn, hoàn tồn kho, đánh giá món |
