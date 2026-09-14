@@ -1,0 +1,11 @@
+@extends('layouts.app')
+@section('title', ($food->exists ? 'Sửa món ăn' : 'Thêm món ăn').' · FoodGo')
+@section('content')
+@include('admin.partials.nav')
+<div class="management-head"><div><div class="eyebrow">Quản trị thực đơn</div><h1>{{ $food->exists ? 'Sửa món ăn' : 'Thêm món ăn' }}</h1></div><a class="button secondary" href="{{ route('admin.foods.index') }}">Quay lại</a></div>
+@if(session('status'))<div class="alert">{{ session('status') }}</div>@endif
+@if($errors->any())<div class="alert error-alert">{{ $errors->first() }}</div>@endif
+<form class="form-panel" method="POST" action="{{ $food->exists ? route('admin.foods.update', $food) : route('admin.foods.store') }}">@csrf @if($food->exists)@method('PUT')@endif
+<div class="form-grid"><div class="field span-2"><label for="name">Tên món</label><input id="name" name="name" value="{{ old('name', $food->name) }}" required></div><div class="field"><label for="category">Danh mục</label><input id="category" name="category" value="{{ old('category', $food->category) }}" required></div><div class="field"><label for="price">Giá bán</label><input id="price" type="number" name="price" value="{{ old('price', $food->price) }}" min="0" step="1000" required></div><div class="field"><label for="stock">Tồn kho</label><input id="stock" type="number" name="stock" value="{{ old('stock', $food->stock ?? 0) }}" min="0" required></div><div class="field"><label for="is_available">Trạng thái</label><select id="is_available" name="is_available"><option value="1" @selected(old('is_available', $food->is_available ?? true))>Đang bán</option><option value="0" @selected(! old('is_available', $food->is_available ?? true))>Ngừng bán</option></select></div><div class="field span-2"><label for="image_url">URL hình ảnh</label><input id="image_url" type="url" name="image_url" value="{{ old('image_url', $food->image_url) }}" placeholder="https://..."></div><div class="field span-2"><label for="description">Mô tả</label><textarea id="description" name="description" rows="5">{{ old('description', $food->description) }}</textarea></div></div><div class="form-actions"><button class="button" type="submit">{{ $food->exists ? 'Lưu thay đổi' : 'Tạo món ăn' }}</button></div>
+</form>
+@endsection
