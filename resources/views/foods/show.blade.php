@@ -7,7 +7,7 @@
     <div class="category">{{ $food->category ?: 'Món ăn' }}</div>
     <h1 style="font-size:36px">{{ $food->name }}</h1>
     <p class="lead">{{ $food->description }}</p>
-    <div class="bottom"><span class="price">{{ number_format($food->price, 0, ',', '.') }} đ</span><span class="stock">Còn {{ $food->stock }} phần</span></div>
+    <div class="bottom"><span class="price">{{ number_format($food->price, 0, ',', '.') }} đ</span><span class="stock {{ $food->stock === 0 ? 'out-of-stock' : '' }}">{{ $food->stock > 0 ? 'Còn '.$food->stock.' phần' : 'Hết sản phẩm' }}</span></div>
     @if($food->stock > 0)
         @auth
             @if(auth()->user()->role === 'customer')
@@ -24,7 +24,7 @@
             <a class="button" style="margin-top:22px" href="{{ route('login') }}">Đăng nhập để đặt món</a>
         @endauth
     @else
-        <div class="alert error-alert" style="margin-top:22px">Món ăn hiện đã hết hàng.</div>
+        <div class="alert error-alert" style="margin-top:22px"><strong>Hết sản phẩm.</strong> Món ăn này hiện không thể thêm vào giỏ hàng.</div>
     @endif
 </div>
 <div class="section-heading" style="max-width:900px"><h2>Đánh giá gần đây</h2>@if($food->reviews->isNotEmpty())<span class="rating-stars">★ {{ number_format($food->reviews->avg('rating'), 1) }}/5</span>@endif</div>

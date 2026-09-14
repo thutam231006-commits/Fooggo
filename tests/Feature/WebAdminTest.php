@@ -16,7 +16,12 @@ class WebAdminTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $location = $this->actingAs($admin)->post('/admin/foods', [
+        $this->actingAs($admin)
+            ->get('/admin/foods/create')
+            ->assertOk()
+            ->assertSee('Tạo món ăn');
+
+        $location = $this->post('/admin/foods', [
             'name' => 'Cơm cá kho',
             'category' => 'Cơm',
             'description' => 'Cá kho dùng với cơm nóng.',
@@ -137,8 +142,17 @@ class WebAdminTest extends TestCase
         $customer = User::factory()->create(['role' => 'customer']);
 
         $this->actingAs($customer)->get('/admin/foods')->assertForbidden();
+        $this->get('/admin/foods/create')->assertForbidden();
+        $this->post('/admin/foods', [
+            'name' => 'Món trái phép',
+            'category' => 'Cơm',
+            'price' => 10000,
+            'stock' => 10,
+            'is_available' => 1,
+        ])->assertForbidden();
         $this->get('/admin/users')->assertForbidden();
         $this->get('/admin/reports')->assertForbidden();
+        $this->assertDatabaseMissing('foods', ['name' => 'Món trái phép']);
     }
 
     public function test_admin_report_excludes_orders_that_are_not_completed(): void
