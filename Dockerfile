@@ -12,4 +12,5 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
 EXPOSE 8000
-CMD php artisan serve --host=0.0.0.0 --port=8000
+
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=10000
