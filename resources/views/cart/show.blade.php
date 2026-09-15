@@ -7,9 +7,27 @@
 @if($errors->any())<div class="alert error-alert">{{ $errors->first() }}</div>@endif
 <div class="table-wrap"><table><thead><tr><th>Món ăn</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th></th></tr></thead><tbody>
 @forelse($cart->items as $item)
-<tr class="{{ (! $item->food->is_available || $item->food->stock < $item->quantity) ? 'invalid-row' : '' }}"><td><a class="cart-food" href="{{ route('foods.show', $item->food) }}">@if($item->food->displayImageUrl())<img src="{{ $item->food->displayImageUrl() }}" alt="">@else<span class="cart-food-placeholder">{{ $item->food->displayEmoji() }}</span>@endif<span>{{ $item->food->name }}@if(! $item->food->is_available || $item->food->stock === 0)<small class="stock-warning">Hết sản phẩm</small>@elseif($item->food->stock < $item->quantity)<small class="stock-warning">Chỉ còn {{ $item->food->stock }} phần</small>@endif</span></a></td><td>{{ number_format($item->food->price, 0, ',', '.') }} đ</td><td>@if($item->food->stock > 0 && $item->food->is_available)<form class="actions" method="POST" action="{{ route('cart.items.update', $item) }}">@csrf @method('PATCH')<input class="quantity-input" type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->food->stock }}" required><button class="button secondary" type="submit">Cập nhật</button></form>@else<span class="muted">Không thể cập nhật</span>@endif</td><td><strong>{{ number_format($item->quantity * $item->food->price, 0, ',', '.') }} đ</strong></td><td><form method="POST" action="{{ route('cart.items.destroy', $item) }}">@csrf @method('DELETE')<button class="button danger" type="submit">Xóa</button></form></td></tr>
+<tr class="{{ (! $item->food->is_available || $item->food->stock < $item->quantity) ? 'invalid-row' : '' }}"><td><a class="cart-food" href="{{ route('foods.show', $item->food) }}">@if($item->food->displayImageUrl())<img src="{{ $item->food->displayImageUrl() }}" alt="">@else<span class="cart-food-placeholder">{{ $item->food->displayEmoji() }}</span>@endif<span>{{ $item->food->name }}@if(! $item->food->is_available || $item->food->stock === 0)<small class="stock-warning">Hết sản phẩm</small>@elseif($item->food->stock < $item->quantity)<small class="stock-warning">Chỉ còn {{ $item->food->stock }} phần</small>@endif</span></a></td><td>{{ number_format($item->food->price, 0, ',', '.') }} đ</td><td>@if($item->food->stock > 0 && $item->food->is_available)<form class="actions update-form" method="POST" action="{{ route('cart.items.update', $item) }}">@csrf @method('PATCH')<input class="quantity-input" type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->food->stock }}" required><button class="button secondary" type="submit">Cập nhật</button></form>@else<span class="muted">Không thể cập nhật</span>@endif</td><td><strong>{{ number_format($item->quantity * $item->food->price, 0, ',', '.') }} đ</strong></td><td><form method="POST" action="{{ route('cart.items.destroy', $item) }}">@csrf @method('DELETE')<button class="button danger" type="submit">Xóa</button></form></td></tr>
 @empty<tr><td colspan="5" class="muted">Giỏ hàng đang trống. Hãy chọn món trước khi đặt hàng.</td></tr>@endforelse
 </tbody></table></div>
+@push('scripts')
+<script>
+document.querySelectorAll('.update-form').forEach(form => {
+    const quantityInput = form.querySelector('.quantity-input');
+    const priceText = form.closest('tr').querySelector('.food-price').textContent;
+    const subtotalCell = form.closest('tr').querySelector('.subtotal');
+    
+    quantityInput.addEventListener('change', function() {
+        const price = parseInt(priceText.replace(/[^\d]/g, ''));
+        const newSubtotal = price * parseInt(this.value);
+        
+        subtotalCell.textContent = new Intl.NumberFormat('vi-VN').format(newSubtotal);
+        
+        form.submit();
+    });
+});
+</script>
+@endpush
 @if($cart->items->isNotEmpty())
 @if($hasInvalidItems)<div class="alert error-alert"><strong>Giỏ hàng có sản phẩm không còn đủ hàng.</strong> Vui lòng xóa sản phẩm hết hàng hoặc giảm số lượng trước khi đặt.</div>@endif
 <div class="bottom" style="font-size:20px"><strong>Tổng cộng</strong><strong>{{ number_format($total, 0, ',', '.') }} đ</strong></div>
