@@ -1,17 +1,18 @@
-FROM php:8.3-cli
+FROM php:8.5-fpm-alpine
 
-RUN apt-get update && apt-get install -y \
-    git unzip libpng-dev libonig-dev libxml2-dev zip curl
+# Cài đặt các thư viện hệ thống và extension PHP
+RUN apk add --no-cache nginx zip unzip git mariadb-client
+RUN docker-php-ext-install pdo pdo_mysql
 
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+WORKDIR /var/www/html
+COPY . .
 
-WORKDIR /var/www
-COPY . /var/www
-
+# Cài đặt Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader
+
+# Phân quyền lưu trữ cho Laravel
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 8000
-
-
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=10000
+CMD php artisan serve --host=0.0.0.0 --port=8000
