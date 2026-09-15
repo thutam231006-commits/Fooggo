@@ -1,21 +1,17 @@
 @extends('layouts.app')
-@section('title', 'Đăng ký · FoodGo')
+@section('title', 'Đăng ký tài khoản · FoodGo')
 @section('content')
-<div class="auth-shell">
-    <section class="auth-box">
-        <h1>Tạo tài khoản</h1>
-        <p class="muted">Tài khoản mới được tạo với vai trò khách hàng.</p>
-        <form method="POST" action="{{ route('register') }}">
-            @csrf
-            <div class="field"><label for="name">Họ và tên</label><input id="name" name="name" value="{{ old('name') }}" required autofocus>@error('name')<div class="error">{{ $message }}</div>@enderror</div>
-            <div class="field"><label for="email">Email</label><input id="email" type="email" name="email" value="{{ old('email') }}" required>@error('email')<div class="error">{{ $message }}</div>@enderror</div>
-            <div class="field"><label for="student_id">Mã sinh viên</label><input id="student_id" name="student_id" value="{{ old('student_id') }}">@error('student_id')<div class="error">{{ $message }}</div>@enderror</div>
-            <div class="field"><label for="phone">Số điện thoại</label><input id="phone" name="phone" value="{{ old('phone') }}">@error('phone')<div class="error">{{ $message }}</div>@enderror</div>
-            <div class="field"><label for="password">Mật khẩu</label><input id="password" type="password" name="password" minlength="8" required>@error('password')<div class="error">{{ $message }}</div>@enderror</div>
-            <div class="field"><label for="password_confirmation">Nhập lại mật khẩu</label><input id="password_confirmation" type="password" name="password_confirmation" minlength="8" required></div>
-            <button class="button full" type="submit">Đăng ký</button>
-        </form>
-        <p class="muted" style="text-align:center;margin:18px 0 0">Đã có tài khoản? <a class="back" href="{{ route('login') }}">Đăng nhập</a></p>
+<div class="register-banner"><span class="material-symbols-outlined">person_add</span><div><strong>Tạo tài khoản FoodGo</strong><small>Đăng ký một lần để đặt món, theo dõi tiến độ và nhận món theo khung giờ.</small></div><span class="eco-label">Miễn phí đăng ký</span></div>
+<div class="auth-layout register-layout">
+    <section class="auth-showcase register-showcase">
+        <span class="system-label">FoodGo Canteen</span><h1>Một tài khoản cho toàn bộ hành trình bữa trưa</h1><p>Thông tin đơn hàng, số dư ví và lịch sử giao dịch được quản lý tập trung.</p>
+        <div class="auth-benefits"><div><span class="material-symbols-outlined">schedule</span><p><strong>Đặt trước giờ nhận món</strong><small>Chủ động chọn thời gian và giảm thời gian xếp hàng.</small></p></div><div><span class="material-symbols-outlined">account_balance_wallet</span><p><strong>Thanh toán bằng Ví FoodGo</strong><small>Số dư được quản trị viên cấp và cập nhật trong tài khoản.</small></p></div><div><span class="material-symbols-outlined">receipt_long</span><p><strong>Theo dõi đơn theo thời gian thực</strong><small>Biết khi bếp tiếp nhận, đang nấu và sẵn sàng giao.</small></p></div></div>
+        <div class="register-image"><img src="https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=900&q=85" alt="Không gian căn tin FoodGo"><div><b>Căn tin FoodGo</b><span>Mở cửa 06:30 - 19:30</span></div></div>
+    </section>
+    <section class="auth-form-panel"><div class="auth-form-head"><span>Tài khoản khách hàng</span><h2>Đăng ký FoodGo</h2><p>Điền thông tin chính xác để nhận thông báo và hỗ trợ đơn hàng.</p></div><div class="register-steps"><span class="active"><b>1</b>Thông tin cá nhân</span><span><b>2</b>Tạo tài khoản</span><span><b>3</b>Đăng nhập sử dụng</span></div>
+        @if($errors->any())<div class="alert error-alert">{{ $errors->first() }}</div>@endif
+        <form method="POST" action="{{ route('register') }}">@csrf<div class="form-grid"><div class="field span-2"><label for="name">Họ và tên đầy đủ</label><input id="name" name="name" value="{{ old('name') }}" placeholder="Nguyễn Văn An" required autofocus>@error('name')<div class="error">{{ $message }}</div>@enderror</div><div class="field"><label for="student_id">Mã sinh viên / nhân viên</label><input id="student_id" name="student_id" value="{{ old('student_id') }}" placeholder="SV001">@error('student_id')<div class="error">{{ $message }}</div>@enderror</div><div class="field"><label for="phone">Số điện thoại</label><input id="phone" name="phone" value="{{ old('phone') }}" placeholder="0987 654 321">@error('phone')<div class="error">{{ $message }}</div>@enderror</div><div class="field span-2"><label for="email">Email</label><input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="an.nguyen@example.com" required>@error('email')<div class="error">{{ $message }}</div>@enderror</div><div class="field"><label for="password">Mật khẩu đăng nhập</label><input id="password" type="password" name="password" minlength="8" placeholder="Tối thiểu 8 ký tự" required>@error('password')<div class="error">{{ $message }}</div>@enderror</div><div class="field"><label for="password_confirmation">Nhập lại mật khẩu</label><input id="password_confirmation" type="password" name="password_confirmation" minlength="8" placeholder="Nhập lại mật khẩu" required></div></div><button class="button full auth-submit" type="submit">Tạo tài khoản FoodGo <span class="material-symbols-outlined">arrow_forward</span></button></form>
+        <p class="auth-register-link">Đã có tài khoản? <a href="{{ route('login') }}">Đăng nhập ngay</a></p><div class="auth-security"><span><span class="material-symbols-outlined">lock</span>Mật khẩu được mã hóa an toàn</span><span><span class="material-symbols-outlined">support_agent</span>Hỗ trợ: 1900 6886</span></div>
     </section>
 </div>
 @endsection

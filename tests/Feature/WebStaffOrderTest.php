@@ -12,6 +12,25 @@ class WebStaffOrderTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_open_staff_kitchen_dashboard(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get('/staff/dashboard')->assertOk()->assertSee('Điều phối Bếp');
+    }
+
+    public function test_staff_can_filter_kitchen_orders_by_customer_or_status(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $lan = User::factory()->create(['name' => 'Nguyễn Lan', 'role' => 'customer']);
+        $minh = User::factory()->create(['name' => 'Trần Minh', 'role' => 'customer']);
+        Order::create(['user_id' => $lan->id, 'ordered_at' => now(), 'pickup_slot' => now()->addHour()->format('Y-m-d H:i'), 'total' => 30000, 'status' => 'paid']);
+        Order::create(['user_id' => $minh->id, 'ordered_at' => now(), 'pickup_slot' => now()->addHour()->format('Y-m-d H:i'), 'total' => 30000, 'status' => 'preparing']);
+
+        $this->actingAs($staff)->get('/staff/dashboard?search=Nguyễn+Lan')->assertOk()->assertSee('Nguyễn Lan')->assertDontSee('Trần Minh');
+        $this->get('/staff/dashboard?status=preparing')->assertOk()->assertSee('Trần Minh')->assertDontSee('Nguyễn Lan');
+    }
+
     public function test_new_unpaid_order_is_visible_to_staff_but_cannot_be_processed(): void
     {
         $customer = User::factory()->create(['role' => 'customer']);

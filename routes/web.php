@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [WebController::class, 'home'])->name('home');
 Route::get('/foods/{food}', [WebController::class, 'show'])->name('foods.show');
+Route::get('/pickup/{order}', [WebOrderController::class, 'verifyPickup'])->middleware('signed')->name('pickup.verify');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [WebAuthController::class, 'showRegister'])->name('register');
@@ -39,7 +40,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/orders/{order}/foods/{food}/review', [WebReviewController::class, 'store'])->name('web.reviews.store');
     });
 
-    Route::middleware('role:staff')->group(function () {
+    Route::middleware('role:staff,admin')->group(function () {
         Route::get('/staff/dashboard', [DashboardController::class, 'staff'])->name('staff.dashboard');
         Route::patch('/staff/orders/{order}/status', [WebStaffOrderController::class, 'update'])->name('staff.orders.status');
     });

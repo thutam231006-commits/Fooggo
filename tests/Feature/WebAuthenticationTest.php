@@ -35,7 +35,7 @@ class WebAuthenticationTest extends TestCase
         ])->assertRedirect('/dashboard');
 
         $this->assertAuthenticated();
-        $this->get('/dashboard')->assertRedirect('/customer/dashboard');
+        $this->get('/dashboard')->assertRedirect('/');
         $this->get('/customer/dashboard')->assertOk()->assertSee('Nguyễn Văn An');
     }
 
@@ -55,11 +55,12 @@ class WebAuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_each_role_is_redirected_to_its_own_dashboard(): void
+    public function test_each_role_is_redirected_to_its_correct_starting_page(): void
     {
         foreach (['customer', 'staff', 'admin'] as $role) {
             $user = User::factory()->create(['role' => $role]);
-            $this->actingAs($user)->get('/dashboard')->assertRedirect("/{$role}/dashboard");
+            $expected = $role === 'customer' ? '/' : "/{$role}/dashboard";
+            $this->actingAs($user)->get('/dashboard')->assertRedirect($expected);
         }
     }
 

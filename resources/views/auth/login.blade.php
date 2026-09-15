@@ -1,19 +1,8 @@
 @extends('layouts.app')
-@section('title', 'Đăng nhập · FoodGo')
+@section('title', 'Đăng nhập · FoodGo Canteen')
 @section('content')
-<div class="auth-shell">
-    <section class="auth-box">
-        <h1>Đăng nhập</h1>
-        <p class="muted">Dùng email hoặc mã sinh viên của bạn.</p>
-        @if(session('status'))<div class="alert">{{ session('status') }}</div>@endif
-        <form method="POST" action="{{ route('login') }}">
-            @csrf
-            <div class="field"><label for="login">Email hoặc mã sinh viên</label><input id="login" name="login" value="{{ old('login') }}" autocomplete="username" required autofocus>@error('login')<div class="error">{{ $message }}</div>@enderror</div>
-            <div class="field"><label for="password">Mật khẩu</label><input id="password" type="password" name="password" autocomplete="current-password" required>@error('password')<div class="error">{{ $message }}</div>@enderror</div>
-            <div class="field" style="display:flex;grid-template-columns:auto 1fr;align-items:center"><input id="remember" type="checkbox" name="remember" value="1" style="width:auto"><label for="remember">Ghi nhớ đăng nhập</label></div>
-            <button class="button full" type="submit">Đăng nhập</button>
-        </form>
-        <p class="muted" style="text-align:center;margin:18px 0 0">Chưa có tài khoản? <a class="back" href="{{ route('register') }}">Đăng ký</a></p>
-    </section>
+<div class="auth-layout">
+    <section class="auth-showcase"><span class="system-label"><span class="material-symbols-outlined">verified</span>Hệ thống đặt món căn tin</span><h1>Bữa trưa tươi ngon,<br><span>không chờ đợi lâu</span></h1><p>Đặt món trước, thanh toán bằng Ví FoodGo và theo dõi tiến độ chuẩn bị theo thời gian thực.</p><div class="auth-food"><img src="https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1000&q=85" alt="Suất ăn FoodGo"><div><strong>Suất ăn nóng trong ngày</strong><span>Chuẩn bị theo đơn</span></div></div><div class="auth-benefits"><div><span class="material-symbols-outlined">schedule</span><p><strong>Chọn chính xác giờ nhận món</strong><small>Chủ động thời gian và hạn chế xếp hàng.</small></p></div><div><span class="material-symbols-outlined">account_balance_wallet</span><p><strong>Thanh toán bằng Ví FoodGo</strong><small>Giao dịch được lưu và tự hoàn khi đơn bị hủy hợp lệ.</small></p></div><div><span class="material-symbols-outlined">receipt_long</span><p><strong>Theo dõi trạng thái đơn</strong><small>Nhận biết khi bếp tiếp nhận, chế biến và sẵn sàng giao.</small></p></div></div></section>
+    <section class="auth-form-panel"><div class="auth-form-head"><span>Đăng nhập hệ thống</span><h2>Đăng nhập FoodGo Canteen</h2><p>Hệ thống tự mở đúng khu vực khách hàng, nhân viên hoặc quản trị theo quyền tài khoản.</p></div>@if(session('status'))<div class="alert">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert error-alert">{{ $errors->first() }}</div>@endif<div class="role-switch role-info"><span><span class="material-symbols-outlined">school</span>Khách hàng</span><span><span class="material-symbols-outlined">cooking</span>Nhân viên bếp</span><span><span class="material-symbols-outlined">admin_panel_settings</span>Quản trị</span></div><div class="form-divider"><span>Thông tin tài khoản</span></div><form method="POST" action="{{ route('login') }}">@csrf<div class="field"><label for="login">Email hoặc mã sinh viên</label><div class="input-icon"><span class="material-symbols-outlined">person</span><input id="login" name="login" value="{{ old('login') }}" autocomplete="username" placeholder="SV001 hoặc email@example.com" required autofocus></div>@error('login')<div class="error">{{ $message }}</div>@enderror</div><div class="field"><label for="password">Mật khẩu</label><div class="input-icon"><span class="material-symbols-outlined">lock</span><input id="password" type="password" name="password" autocomplete="current-password" placeholder="Nhập mật khẩu của bạn" required></div>@error('password')<div class="error">{{ $message }}</div>@enderror</div><label class="remember-line"><input type="checkbox" name="remember" value="1">Ghi nhớ đăng nhập trên thiết bị này</label><button class="button full auth-submit" type="submit">Đăng nhập ngay <span class="material-symbols-outlined">arrow_forward</span></button></form><p class="auth-register-link">Chưa có tài khoản khách hàng? <a href="{{ route('register') }}">Đăng ký tài khoản</a></p><div class="auth-security"><span><span class="material-symbols-outlined">lock</span>Mật khẩu được mã hóa an toàn</span><span><span class="material-symbols-outlined">support_agent</span>Hỗ trợ: 1900 6886</span></div></section>
 </div>
 @endsection

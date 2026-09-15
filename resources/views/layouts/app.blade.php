@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'FoodGo')</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet">
     <style>
         :root { --green:#087f5b; --role:#087f5b; --role-soft:#e9f8f2; --ink:#17201d; --muted:#6b7772; --line:#e6ebe8; --bg:#f7faf8; }
         body.role-staff { --role:#a35400; --role-soft:#fff4e5; } body.role-admin { --role:#2457a6; --role-soft:#edf4ff; }
@@ -28,13 +31,16 @@
     </style>
     <link rel="stylesheet" href="{{ asset('css/foodgo.css') }}">
 </head>
-<body class="@auth role-{{ auth()->user()->role }} @endauth">
-<header><div class="wrap nav"><a class="brand" href="{{ route('home') }}">FoodGo</a>@include('partials.navigation')</div></header>
-@hasSection('page')
+@php($operationsPage = request()->routeIs('staff.dashboard', 'admin.dashboard'))
+<body class="@auth role-{{ auth()->user()->role }} @endauth {{ $operationsPage ? 'operations-page' : '' }}">
+@unless($operationsPage)<header><div class="wrap nav"><a class="brand" href="{{ route('home') }}"><span class="material-symbols-outlined">restaurant</span><span>FoodGo</span></a>@include('partials.navigation')</div></header>@endunless
+@if($operationsPage)
+    <main class="operations-main"><form class="operations-logout" method="POST" action="{{ route('logout') }}">@csrf<button type="submit" title="Đăng xuất" aria-label="Đăng xuất"><span class="material-symbols-outlined">logout</span></button></form>@yield('content')</main>
+@elseif(View::hasSection('page'))
     <main>@yield('page')</main>
 @else
     <main><div class="wrap">@yield('content')</div></main>
 @endif
-<footer><div class="wrap">FoodGo · Đặt món căn tin nhanh chóng</div></footer>
+@unless($operationsPage)<footer><div class="wrap">FoodGo · Đặt món căn tin nhanh chóng</div></footer>@endunless
 </body>
 </html>

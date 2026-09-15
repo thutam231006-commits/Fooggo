@@ -30,8 +30,23 @@ class OrderController extends Controller
             'items' => ['nullable', 'array', 'min:1'],
             'items.*.food_id' => ['required', 'integer', 'distinct', 'exists:foods,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.options' => ['nullable', 'array'],
+            'items.*.options.rice_type' => ['nullable', 'in:regular,garlic,brown'],
+            'items.*.options.extras' => ['nullable', 'array', 'max:5'],
+            'items.*.options.extras.*' => ['in:egg,meatloaf,soup,vegetables,extra_rice'],
+            'items.*.options.sauce' => ['nullable', 'in:default,spicy,mild'],
+            'items.*.options.spice_level' => ['nullable', 'in:none,medium,hot'],
+            'items.*.options.note' => ['nullable', 'string', 'max:300'],
+            'fulfillment_type' => ['nullable', 'in:dine_in,takeaway'],
+            'payment_method' => ['nullable', 'in:foodgo_wallet,cash_on_delivery'],
         ]);
-        $order = $workflow->create($request->user(), $data['pickup_slot'], $data['items'] ?? null);
+        $order = $workflow->create(
+            $request->user(),
+            $data['pickup_slot'],
+            $data['items'] ?? null,
+            $data['fulfillment_type'] ?? 'dine_in',
+            $data['payment_method'] ?? 'foodgo_wallet',
+        );
 
         return response()->json($order->load('items.food'), 201);
     }
