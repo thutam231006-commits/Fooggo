@@ -12,6 +12,25 @@ class WebOrderingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_customer_menu_is_the_default_start_page_and_uses_compact_pagination(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        Food::factory()->count(10)->create();
+
+        $this->actingAs($customer)->get('/dashboard')->assertRedirect('/');
+        $this->get('/')->assertOk()->assertViewHas('foods', fn ($foods) => $foods->count() === 8);
+    }
+
+    public function test_customer_can_search_menu_and_add_item_without_leaving_menu(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        $target = Food::factory()->create(['name' => 'Cơm cá kho đặc biệt', 'stock' => 10]);
+        Food::factory()->create(['name' => 'Bún thịt nướng']);
+
+        $this->actingAs($customer)->get('/?search=cá+kho')->assertOk()->assertSee($target->name)->assertDontSee('Bún thịt nướng');
+        $this->post('/cart/items', ['food_id' => $target->id, 'quantity' => 1, 'redirect_to' => 'menu'])->assertRedirect('/');
+    }
+
     public function test_customer_can_add_food_create_order_and_pay_on_web(): void
     {
         $customer = User::factory()->create([
@@ -95,6 +114,47 @@ class WebOrderingTest extends TestCase
             ->assertSee('Cơm gà')
             ->assertSee('Trà tắc')
             ->assertSee('60.000 đ');
+    }
+
+    public function test_customer_can_place_order_with_cash_on_delivery_and_payment_is_completed_on_pickup(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer', 'wallet_balance' => 0]);
+        $staff = User::factory()->create(['role' => 'staff']);
+        $food = Food::factory()->create(['price' => 25000, 'stock' => 5]);
+
+        $this->actingAs($customer)->post('/cart/items', [
+            'food_id' => $food->id,
+            'quantity' => 1,
+        ])->assertRedirect('/cart');
+        $this->get('/cart')->assertOk()->assertSee('cash_on_delivery', false);
+
+        $location = $this->post('/orders', [
+            'pickup_slot' => now()->addHour()->format('Y-m-d\\TH:i'),
+            'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors()->assertRedirect()->headers->get('Location');
+
+        $orderId = basename($location);
+        $this->assertDatabaseHas('orders', [
+            'id' => $orderId,
+            'status' => 'paid',
+            'payment_method' => 'cash_on_delivery',
+        ]);
+        $this->assertDatabaseHas('payments', [
+            'order_id' => $orderId,
+            'method' => 'cash_on_delivery',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($staff)->patch("/staff/orders/{$orderId}/status", ['status' => 'preparing'])->assertRedirect('/staff/dashboard');
+        $this->patch("/staff/orders/{$orderId}/status", ['status' => 'ready'])->assertRedirect('/staff/dashboard');
+        $this->patch("/staff/orders/{$orderId}/status", ['status' => 'completed'])->assertRedirect('/staff/dashboard');
+
+        $this->assertDatabaseHas('payments', [
+            'order_id' => $orderId,
+            'method' => 'cash_on_delivery',
+            'status' => 'successful',
+        ]);
+        $this->assertSame('0.00', $customer->fresh()->wallet_balance);
     }
 
     public function test_staff_cannot_open_customer_cart(): void

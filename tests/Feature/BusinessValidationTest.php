@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Food;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\OrderWorkflowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class BusinessValidationTest extends TestCase
@@ -167,6 +169,99 @@ class BusinessValidationTest extends TestCase
             'login' => 'rate-limit@foodgo.test',
             'password' => 'wrong-password',
         ])->assertTooManyRequests();
+    }
+
+    public function test_customized_food_price_and_options_are_preserved_in_order(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        $food = Food::factory()->create(['price' => 30000, 'stock' => 10]);
+
+        $this->actingAs($customer)->post('/cart/items', [
+            'food_id' => $food->id,
+            'quantity' => 2,
+            'rice_type' => 'garlic',
+            'extras' => ['egg', 'soup'],
+            'sauce' => 'spicy',
+            'spice_level' => 'medium',
+            'note' => 'Không hành',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('cart_items', ['food_id' => $food->id, 'unit_price' => 48000]);
+
+        $this->post('/orders', ['pickup_slot' => now()->addHour()->format('Y-m-d\TH:i')])->assertSessionHasNoErrors();
+        $order = Order::latest('id')->firstOrFail();
+        $item = $order->items()->firstOrFail();
+
+        $this->assertSame('96000.00', $order->total);
+        $this->assertSame('48000.00', $item->unit_price);
+        $this->assertSame(['egg', 'soup'], $item->options['extras']);
+        $this->assertSame('Không hành', $item->options['note']);
+        $this->assertNotNull($order->pickup_code);
+        $this->assertNotNull($order->expires_at);
+    }
+
+    public function test_same_food_with_different_customizations_creates_separate_cart_lines(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        $food = Food::factory()->create(['price' => 30000, 'stock' => 10]);
+
+        $this->actingAs($customer)->post('/cart/items', ['food_id' => $food->id, 'quantity' => 1]);
+        $this->post('/cart/items', ['food_id' => $food->id, 'quantity' => 1, 'extras' => ['egg']]);
+
+        $this->assertDatabaseCount('cart_items', 2);
+        $this->assertEqualsCanonicalizing([30000.0, 37000.0], $customer->cart->items->pluck('unit_price')->map(fn ($price) => (float) $price)->all());
+    }
+
+    public function test_total_quantity_across_customizations_cannot_exceed_food_stock(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        $food = Food::factory()->create(['stock' => 2]);
+
+        $this->actingAs($customer)->post('/cart/items', ['food_id' => $food->id, 'quantity' => 2])->assertSessionHasNoErrors();
+        $this->post('/cart/items', ['food_id' => $food->id, 'quantity' => 1, 'extras' => ['egg']])->assertSessionHasErrors('quantity');
+
+        $this->assertDatabaseCount('cart_items', 1);
+        $this->assertSame(2, (int) $customer->cart->items()->sum('quantity'));
+    }
+
+    public function test_expired_pending_order_releases_reserved_stock(): void
+    {
+        $food = Food::factory()->create(['stock' => 8, 'price' => 20000]);
+        [$customer, $order] = $this->pendingOrder(wallet: 100000, total: 40000);
+        $order->items()->create(['food_id' => $food->id, 'quantity' => 2, 'unit_price' => 20000, 'subtotal' => 40000]);
+        $order->update(['expires_at' => now()->subMinute()]);
+
+        $expired = app(OrderWorkflowService::class)->expirePendingOrders();
+
+        $this->assertSame(1, $expired);
+        $this->assertSame('expired', $order->fresh()->status);
+        $this->assertSame(10, $food->fresh()->stock);
+    }
+
+    public function test_customer_can_cancel_paid_order_before_kitchen_accepts_and_receive_refund(): void
+    {
+        $food = Food::factory()->create(['stock' => 8, 'price' => 30000]);
+        [$customer, $order] = $this->pendingOrder(wallet: 70000, total: 30000);
+        $order->items()->create(['food_id' => $food->id, 'quantity' => 1, 'unit_price' => 30000, 'subtotal' => 30000]);
+        $order->payment()->create(['method' => 'foodgo_wallet', 'amount' => 30000, 'status' => 'successful', 'paid_at' => now()]);
+        $order->update(['status' => 'paid']);
+
+        $this->actingAs($customer)->delete("/orders/{$order->id}")->assertSessionHasNoErrors();
+
+        $this->assertSame('cancelled', $order->fresh()->status);
+        $this->assertSame('refunded', $order->payment->fresh()->status);
+        $this->assertSame('100000.00', $customer->fresh()->wallet_balance);
+        $this->assertSame(9, $food->fresh()->stock);
+    }
+
+    public function test_pickup_verification_requires_a_valid_temporary_signature(): void
+    {
+        [, $order] = $this->pendingOrder(wallet: 100000, total: 30000);
+        $order->update(['pickup_code' => 'A-123']);
+        $signedUrl = URL::temporarySignedRoute('pickup.verify', now()->addHour(), ['order' => $order]);
+
+        $this->get($signedUrl)->assertOk()->assertSee('A-123');
+        $this->get(route('pickup.verify', $order))->assertForbidden();
     }
 
     private function pendingOrder(int $wallet, int $total, ?string $pickupSlot = null): array

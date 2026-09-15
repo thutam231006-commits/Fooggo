@@ -9,9 +9,9 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'processed_by', 'ordered_at', 'pickup_slot', 'total', 'status', 'rejection_reason'];
+    protected $fillable = ['user_id', 'processed_by', 'ordered_at', 'pickup_slot', 'pickup_code', 'fulfillment_type', 'payment_method', 'service_fee', 'total', 'status', 'rejection_reason', 'expires_at', 'prepared_at', 'ready_at', 'completed_at'];
 
-    protected $casts = ['ordered_at' => 'datetime', 'total' => 'decimal:2'];
+    protected $casts = ['ordered_at' => 'datetime', 'expires_at' => 'datetime', 'prepared_at' => 'datetime', 'ready_at' => 'datetime', 'completed_at' => 'datetime', 'service_fee' => 'decimal:2', 'total' => 'decimal:2'];
 
     public function user()
     {
