@@ -31,6 +31,11 @@ class OrderStatusService
                     throw ValidationException::withMessages(['rejection_reason' => 'Vui lòng nhập lý do từ chối đơn hàng.']);
                 }
 
+                $payment = $lockedOrder->payment()->lockForUpdate()->first();
+                if (! $payment || $payment->status !== 'successful' || (string) $payment->amount !== (string) $lockedOrder->total) {
+                    throw ValidationException::withMessages(['status' => 'Giao dịch không hợp lệ để hoàn tiền.']);
+                }
+
                 $lockedOrder->load('items');
                 foreach ($lockedOrder->items as $item) {
                     Food::whereKey($item->food_id)->increment('stock', $item->quantity);
@@ -39,7 +44,7 @@ class OrderStatusService
                 User::whereKey($lockedOrder->user_id)
                     ->lockForUpdate()
                     ->firstOrFail()
-                    ->increment('wallet_balance', $lockedOrder->total);
+                    ->increment('wallet_balance', $payment->amount);
 
                 $updated = $lockedOrder->payment()->update([
                     'status' => 'refunded',

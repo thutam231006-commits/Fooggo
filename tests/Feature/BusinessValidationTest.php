@@ -112,7 +112,7 @@ class BusinessValidationTest extends TestCase
         [$customer, $order] = $this->pendingOrder(wallet: 100000, total: 30000);
 
         $this->actingAs($customer)->post("/orders/{$order->id}/payment")->assertRedirect();
-        $this->post("/orders/{$order->id}/payment")->assertSessionHasErrors('payment');
+        $this->post("/orders/{$order->id}/payment")->assertRedirect();
 
         $this->assertDatabaseCount('payments', 1);
         $this->assertEquals('70000.00', $customer->fresh()->wallet_balance);
@@ -126,6 +126,36 @@ class BusinessValidationTest extends TestCase
             ->assertSessionHasErrors('payment');
 
         $this->assertDatabaseCount('payments', 0);
+    }
+
+    public function test_expired_payment_reservation_releases_stock_and_cancels_order(): void
+    {
+        [$customer, $order] = $this->pendingOrder(wallet: 100000, total: 30000);
+        $food = Food::factory()->create(['stock' => 3]);
+        $order->update(['payment_expires_at' => now()->subMinute()]);
+        $order->items()->create(['food_id' => $food->id, 'quantity' => 2, 'unit_price' => 15000, 'subtotal' => 30000]);
+        $food->decrement('stock', 2);
+
+        $this->actingAs($customer)->post("/orders/{$order->id}/payment")
+            ->assertSessionHasErrors('payment');
+
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'cancelled']);
+        $this->assertDatabaseHas('foods', ['id' => $food->id, 'stock' => 3]);
+        $this->assertDatabaseCount('payments', 0);
+    }
+
+    public function test_scheduled_expiry_releases_stock_only_once(): void
+    {
+        [$customer, $order] = $this->pendingOrder(wallet: 100000, total: 30000);
+        $food = Food::factory()->create(['stock' => 1]);
+        $order->update(['payment_expires_at' => now()->subMinute()]);
+        $order->items()->create(['food_id' => $food->id, 'quantity' => 2, 'unit_price' => 15000, 'subtotal' => 30000]);
+
+        $this->artisan('orders:expire')->assertSuccessful();
+        $this->artisan('orders:expire')->assertSuccessful();
+        $this->assertDatabaseHas('foods', ['id' => $food->id, 'stock' => 3]);
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'cancelled']);
+        $this->assertEquals('100000.00', $customer->fresh()->wallet_balance);
     }
 
     public function test_staff_cannot_skip_order_status_steps(): void

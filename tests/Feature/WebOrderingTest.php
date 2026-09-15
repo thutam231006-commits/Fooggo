@@ -63,6 +63,10 @@ class WebOrderingTest extends TestCase
         $this->assertDatabaseHas('orders', ['id' => $orderId, 'status' => 'paid']);
         $this->assertDatabaseHas('payments', ['order_id' => $orderId, 'status' => 'successful']);
         $this->assertEquals('40000.00', $customer->fresh()->wallet_balance);
+
+        $this->post("/orders/{$orderId}/payment")
+            ->assertRedirect("/orders/{$orderId}");
+        $this->assertDatabaseCount('payments', 1);
     }
 
     public function test_customer_can_keep_shopping_and_cart_preserves_multiple_foods(): void

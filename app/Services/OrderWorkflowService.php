@@ -49,6 +49,7 @@ class OrderWorkflowService
                 'user_id' => $customer->id,
                 'ordered_at' => now(),
                 'pickup_slot' => $pickupSlot,
+                'payment_expires_at' => now()->addMinutes(30)->min(Carbon::parse($pickupSlot)),
                 'total' => $total,
                 'status' => 'pending_payment',
             ]);
@@ -75,15 +76,26 @@ class OrderWorkflowService
             abort(403, 'Bạn không có quyền thanh toán đơn này.');
         }
 
-        return DB::transaction(function () use ($customer, $order) {
+        $result = DB::transaction(function () use ($customer, $order) {
             $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
 
-            if ($lockedOrder->status !== 'pending_payment' || $lockedOrder->payment()->exists()) {
-                throw ValidationException::withMessages(['payment' => 'Đơn hàng không thể thanh toán hoặc đã được thanh toán.']);
+            if (in_array($lockedOrder->status, ['paid', 'preparing', 'ready', 'completed'], true) && $lockedOrder->payment()->where('status', 'successful')->exists()) {
+                return $lockedOrder->fresh()->load('payment', 'items.food');
             }
 
-            if (Carbon::parse($lockedOrder->pickup_slot)->isPast()) {
-                throw ValidationException::withMessages(['payment' => 'Khung giờ nhận món đã qua. Vui lòng hủy đơn và đặt lại.']);
+            if ($lockedOrder->status !== 'pending_payment' || $lockedOrder->payment()->exists()) {
+                throw ValidationException::withMessages(['payment' => 'Đơn hàng không thể thanh toán.']);
+            }
+
+            $deadline = $lockedOrder->payment_expires_at ?? $lockedOrder->ordered_at->copy()->addMinutes(30);
+            if (! $deadline->isFuture() || ! Carbon::parse($lockedOrder->pickup_slot)->isFuture()) {
+                $lockedOrder->load('items');
+                foreach ($lockedOrder->items as $item) {
+                    Food::whereKey($item->food_id)->increment('stock', $item->quantity);
+                }
+                $lockedOrder->update(['status' => 'cancelled']);
+
+                return null;
             }
 
             $lockedCustomer = User::whereKey($customer->id)->lockForUpdate()->firstOrFail();
@@ -100,10 +112,40 @@ class OrderWorkflowService
                 'status' => 'successful',
                 'paid_at' => now(),
             ]);
-            $lockedOrder->update(['status' => 'paid']);
+            $lockedOrder->update(['status' => 'paid', 'payment_expires_at' => null]);
 
             return $lockedOrder->fresh()->load('payment', 'items.food');
         });
+
+        if (! $result) {
+            throw ValidationException::withMessages(['payment' => 'Đơn hàng đã hết thời gian giữ món. Tồn kho đã được hoàn lại, vui lòng đặt đơn mới.']);
+        }
+
+        return $result;
+    }
+
+    public function expireReservations(): int
+    {
+        $count = 0;
+        Order::where('status', 'pending_payment')->orderBy('id')->chunkById(100, function ($orders) use (&$count) {
+            foreach ($orders as $order) {
+                $count += DB::transaction(function () use ($order) {
+                    $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                    $deadline = $locked->payment_expires_at ?? $locked->ordered_at->copy()->addMinutes(30);
+                    if ($locked->status !== 'pending_payment' || ($deadline->isFuture() && Carbon::parse($locked->pickup_slot)->isFuture())) {
+                        return 0;
+                    }
+                    foreach ($locked->items as $item) {
+                        Food::whereKey($item->food_id)->increment('stock', $item->quantity);
+                    }
+                    $locked->update(['status' => 'cancelled']);
+
+                    return 1;
+                });
+            }
+        });
+
+        return $count;
     }
 
     public function cancel(User $customer, Order $order): Order
