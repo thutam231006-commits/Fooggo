@@ -15,3 +15,11 @@
 - Trần Thị Duyên 
 - Ngô Minh Phúc
 - Phan Hữu Thái 
+## Tài khoản test dự án 
+- Khách hàng: tiến hành đăng ký - Đăng nhập
+- ADMin: Quản trị viên admin@foodgo.test
+          Mật khẩu: password
+- Nhân viên 
+        staff@foodgo.test
+        Mật khẩu: password
+
